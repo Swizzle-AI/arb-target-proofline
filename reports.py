@@ -61,8 +61,17 @@ def write_export(db, output):
 def export_to_sink(db, send):
     """Send consecutive batches to the archive sink; each call is one request."""
     rows = iter(db.execute("SELECT id, report, scheduled_at FROM deliveries ORDER BY id"))
-    while batch := list(islice(rows, EXPORT_BATCH_SIZE)):
-        send(batch)
+    while True:
+        for attempt in range(3):
+            batch = list(islice(rows, EXPORT_BATCH_SIZE))
+            if not batch:
+                return
+            try:
+                send(batch)
+                break
+            except RuntimeError:
+                if attempt == 2:
+                    raise
 
 
 def deliver_due(db, queue, now):
