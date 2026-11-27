@@ -21,6 +21,8 @@ def migrate(db):
 
 
 def schedule(db, report, scheduled_at):
+    if scheduled_at < 0:
+        raise ValueError("scheduled time must be non-negative")
     with db:
         row = db.execute(
             "INSERT INTO deliveries (report, scheduled_at, queue) VALUES (?, ?, ?)",
